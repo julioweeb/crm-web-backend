@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -106,7 +108,11 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CrmDbContext>();
     // Para aprendizado: EnsureCreated. Em produção, troque por migrations (dotnet ef migrations add).
-    db.Database.EnsureCreated();
+    var jaExiste = db.Database
+    .SqlQueryRaw<bool>("SELECT to_regclass('public.\"Usuarios\"') IS NOT NULL AS \"Value\"")
+    .AsEnumerable().First();
+    if (!jaExiste)
+        db.GetService<IRelationalDatabaseCreator>().CreateTables();
 
     // SEGURANÇA (Supabase): o schema "public" é exposto por uma API REST pública (PostgREST).
     // Ativar o Row Level Security, sem nenhuma policy, bloqueia o acesso pela chave pública (anon).
