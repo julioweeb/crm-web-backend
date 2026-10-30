@@ -25,6 +25,18 @@ dotnet run
 
 Na primeira execução a API cria as tabelas do modelo (`CreateTables`) e ativa o RLS. Em um banco existente, `CreateTables` não altera o esquema; a inicialização aplica somente a adição idempotente de `Empresas` e da coluna opcional `Usuarios.EmpresaId`, com FK e índice. Confira em **Table Editor**.
 
+Antes de usar o login com a etapa multi-tenant, associe os usuários existentes a uma empresa. Confira os IDs em `Empresas` e, no SQL Editor, atualize os usuários que devem pertencer à empresa escolhida:
+
+```sql
+SELECT "Id", "Nome" FROM public."Empresas" ORDER BY "Id";
+SELECT "Id", "Email", "EmpresaId" FROM public."Usuarios" ORDER BY "Id";
+
+-- Troque 1 pelo Id da empresa correta para este grupo de usuários.
+UPDATE public."Usuarios" SET "EmpresaId" = 1 WHERE "EmpresaId" IS NULL;
+```
+
+Não aplique o `UPDATE` sem confirmar que todos os usuários sem empresa pertencem à mesma empresa. Os registros de CRM ficam no escopo da empresa do usuário responsável.
+
 ## 3. Segurança: Row Level Security (RLS)
 
 O Supabase expõe o schema `public` por uma API REST pública. Sem RLS, quem tiver a URL do projeto e a chave `anon` (que fica no front de qualquer app Supabase) poderia ler as tabelas.
@@ -55,6 +67,7 @@ O `Dockerfile` (na raiz) serve para Render, Railway, Fly.io etc. Variáveis de a
 |---|---|
 | `ConnectionStrings__Padrao` | a connection string do item 1 |
 | `Jwt__Key` | texto aleatório com 32+ caracteres |
+| `Seed__EmpresaNome` | nome da empresa inicial quando a API cria o primeiro administrador |
 | `Seed__AdminEmail` / `Seed__AdminSenha` | administrador inicial (só na 1ª execução) |
 | `Cors__Origens__0` | URL do front-end publicado (ex.: `https://meu-crm.vercel.app`) |
 | `ASPNETCORE_ENVIRONMENT` | `Production` |

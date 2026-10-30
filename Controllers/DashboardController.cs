@@ -23,10 +23,10 @@ public class DashboardController : BaseCrmController
     [HttpGet]
     public async Task<ResumoDashboard> Obter()
     {
-        var clientes = VeTudo ? Db.Clientes : Db.Clientes.Where(c => c.ResponsavelId == UsuarioId);
-        var leads = VeTudo ? Db.Leads : Db.Leads.Where(l => l.ResponsavelId == UsuarioId);
-        var ops = VeTudo ? Db.Oportunidades : Db.Oportunidades.Where(o => o.ResponsavelId == UsuarioId);
-        var tarefas = VeTudo ? Db.Tarefas : Db.Tarefas.Where(t => t.ResponsavelId == UsuarioId);
+        var clientes = VeTudo ? ClientesDaEmpresa : ClientesDaEmpresa.Where(c => c.ResponsavelId == UsuarioId);
+        var leads = VeTudo ? LeadsDaEmpresa : LeadsDaEmpresa.Where(l => l.ResponsavelId == UsuarioId);
+        var ops = VeTudo ? OportunidadesDaEmpresa : OportunidadesDaEmpresa.Where(o => o.ResponsavelId == UsuarioId);
+        var tarefas = VeTudo ? TarefasDaEmpresa : TarefasDaEmpresa.Where(t => t.ResponsavelId == UsuarioId);
 
         var agora = DateTime.UtcNow;
         var inicioMes = new DateTime(agora.Year, agora.Month, 1, 0, 0, 0, DateTimeKind.Utc);

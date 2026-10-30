@@ -12,7 +12,8 @@ public class AnotacoesController : BaseCrmController
     public AnotacoesController(CrmDbContext db) : base(db) { }
 
     private IQueryable<Anotacao> Visiveis() =>
-        VeTudo ? Db.Anotacoes : Db.Anotacoes.Where(a => a.UsuarioId == UsuarioId);
+        Db.Anotacoes.Where(a => a.Usuario != null && a.Usuario.EmpresaId == EmpresaId
+            && (VeTudo || a.UsuarioId == UsuarioId));
 
     [HttpGet]
     public async Task<List<Anotacao>> Listar(int? clienteId, int? oportunidadeId, int? leadId)
@@ -31,14 +32,14 @@ public class AnotacoesController : BaseCrmController
             return BadRequest(new { erro = "Vincule a anotação a um cliente, oportunidade ou lead." });
 
         // Só permite anotar em registros que o usuário enxerga.
-        if (dto.ClienteId.HasValue && !await (VeTudo ? Db.Clientes : Db.Clientes.Where(c => c.ResponsavelId == UsuarioId))
-                .AnyAsync(c => c.Id == dto.ClienteId))
+        var clientesVisiveis = VeTudo ? ClientesDaEmpresa : ClientesDaEmpresa.Where(c => c.ResponsavelId == UsuarioId);
+        var leadsVisiveis = VeTudo ? LeadsDaEmpresa : LeadsDaEmpresa.Where(l => l.ResponsavelId == UsuarioId);
+        var oportunidadesVisiveis = VeTudo ? OportunidadesDaEmpresa : OportunidadesDaEmpresa.Where(o => o.ResponsavelId == UsuarioId);
+        if (dto.ClienteId.HasValue && !await clientesVisiveis.AnyAsync(c => c.Id == dto.ClienteId))
             return BadRequest(new { erro = "Cliente inválido." });
-        if (dto.OportunidadeId.HasValue && !await (VeTudo ? Db.Oportunidades : Db.Oportunidades.Where(o => o.ResponsavelId == UsuarioId))
-                .AnyAsync(o => o.Id == dto.OportunidadeId))
+        if (dto.OportunidadeId.HasValue && !await oportunidadesVisiveis.AnyAsync(o => o.Id == dto.OportunidadeId))
             return BadRequest(new { erro = "Oportunidade inválida." });
-        if (dto.LeadId.HasValue && !await (VeTudo ? Db.Leads : Db.Leads.Where(l => l.ResponsavelId == UsuarioId))
-                .AnyAsync(l => l.Id == dto.LeadId))
+        if (dto.LeadId.HasValue && !await leadsVisiveis.AnyAsync(l => l.Id == dto.LeadId))
             return BadRequest(new { erro = "Lead inválido." });
 
         var a = new Anotacao

@@ -8,6 +8,8 @@ namespace CrmApi.Services;
 
 public class TokenService
 {
+    public const string EmpresaIdClaim = "empresa_id";
+
     private readonly IConfiguration _config;
     public TokenService(IConfiguration config) => _config = config;
 
@@ -22,7 +24,8 @@ public class TokenService
             new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new Claim(ClaimTypes.Name, usuario.Nome),
             new Claim(ClaimTypes.Email, usuario.Email),
-            new Claim(ClaimTypes.Role, usuario.Perfil.ToString())
+            new Claim(ClaimTypes.Role, usuario.Perfil.ToString()),
+            new Claim(EmpresaIdClaim, usuario.EmpresaId!.Value.ToString())
         };
 
         var jwt = new JwtSecurityToken(

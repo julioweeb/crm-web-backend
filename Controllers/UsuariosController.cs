@@ -16,7 +16,7 @@ public class UsuariosController : BaseCrmController
 
     [HttpGet]
     public async Task<List<UsuarioDto>> Listar() =>
-        await Db.Usuarios.OrderBy(u => u.Nome)
+        await Db.Usuarios.Where(u => u.EmpresaId == EmpresaId).OrderBy(u => u.Nome)
             .Select(u => new UsuarioDto(u.Id, u.Nome, u.Email, u.Perfil, u.Ativo)).ToListAsync();
 
     [HttpPost]
@@ -35,7 +35,8 @@ public class UsuariosController : BaseCrmController
             Email = email,
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha),
             Perfil = dto.Perfil,
-            Ativo = dto.Ativo
+            Ativo = dto.Ativo,
+            EmpresaId = EmpresaId
         };
         Db.Usuarios.Add(u);
         await Db.SaveChangesAsync();
@@ -45,7 +46,7 @@ public class UsuariosController : BaseCrmController
     [HttpPut("{id:int}")]
     public async Task<ActionResult<UsuarioDto>> Atualizar(int id, UsuarioAdminDto dto)
     {
-        var u = await Db.Usuarios.FindAsync(id);
+        var u = await Db.Usuarios.FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == EmpresaId);
         if (u is null) return NotFound();
 
         // O admin não pode se rebaixar nem se desativar (evita ficar sem administrador).

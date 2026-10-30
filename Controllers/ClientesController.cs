@@ -15,7 +15,7 @@ public class ClientesController : BaseCrmController
 
     // Restringe a consulta aos clientes que o usuário pode ver.
     private IQueryable<Cliente> Visiveis() =>
-        VeTudo ? Db.Clientes : Db.Clientes.Where(c => c.ResponsavelId == UsuarioId);
+        VeTudo ? ClientesDaEmpresa : ClientesDaEmpresa.Where(c => c.ResponsavelId == UsuarioId);
 
     // Busca e filtros: ?busca=texto&cidade=&estado=&ativo=true&pagina=1&tamanho=20
     [HttpGet]
@@ -74,7 +74,7 @@ public class ClientesController : BaseCrmController
     [Authorize(Roles = "Admin,Gerente")]
     public async Task<IActionResult> Excluir(int id)
     {
-        var c = await Db.Clientes.FindAsync(id);
+        var c = await Visiveis().FirstOrDefaultAsync(x => x.Id == id);
         if (c is null) return NotFound();
         Db.Clientes.Remove(c);
         await Db.SaveChangesAsync();

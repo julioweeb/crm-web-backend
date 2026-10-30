@@ -13,7 +13,7 @@ public class OportunidadesController : BaseCrmController
     public OportunidadesController(CrmDbContext db) : base(db) { }
 
     private IQueryable<Oportunidade> Visiveis() =>
-        VeTudo ? Db.Oportunidades : Db.Oportunidades.Where(o => o.ResponsavelId == UsuarioId);
+        VeTudo ? OportunidadesDaEmpresa : OportunidadesDaEmpresa.Where(o => o.ResponsavelId == UsuarioId);
 
     // Item da lista já traz o nome do cliente para exibir no funil.
     public record OportunidadeItem(
@@ -70,9 +70,8 @@ public class OportunidadesController : BaseCrmController
     public async Task<ActionResult<Oportunidade>> Criar(OportunidadeDto dto)
     {
         // O cliente precisa existir e ser visível para quem está criando.
-        var clienteOk = VeTudo
-            ? await Db.Clientes.AnyAsync(c => c.Id == dto.ClienteId)
-            : await Db.Clientes.AnyAsync(c => c.Id == dto.ClienteId && c.ResponsavelId == UsuarioId);
+        var clientesVisiveis = VeTudo ? ClientesDaEmpresa : ClientesDaEmpresa.Where(c => c.ResponsavelId == UsuarioId);
+        var clienteOk = await clientesVisiveis.AnyAsync(c => c.Id == dto.ClienteId);
         if (!clienteOk) return BadRequest(new { erro = "Cliente inválido." });
 
         var o = new Oportunidade { ResponsavelId = UsuarioId };

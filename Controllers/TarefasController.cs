@@ -14,7 +14,7 @@ public class TarefasController : BaseCrmController
     public TarefasController(CrmDbContext db) : base(db) { }
 
     private IQueryable<Tarefa> Visiveis() =>
-        VeTudo ? Db.Tarefas : Db.Tarefas.Where(t => t.ResponsavelId == UsuarioId);
+        VeTudo ? TarefasDaEmpresa : TarefasDaEmpresa.Where(t => t.ResponsavelId == UsuarioId);
 
     // Filtros: ?status=&tipo=&de=&ate=&atrasadas=true&clienteId=
     [HttpGet]
@@ -95,16 +95,14 @@ public class TarefasController : BaseCrmController
     {
         if (d.ClienteId.HasValue)
         {
-            var ok = VeTudo
-                ? await Db.Clientes.AnyAsync(c => c.Id == d.ClienteId)
-                : await Db.Clientes.AnyAsync(c => c.Id == d.ClienteId && c.ResponsavelId == UsuarioId);
+            var clientesVisiveis = VeTudo ? ClientesDaEmpresa : ClientesDaEmpresa.Where(c => c.ResponsavelId == UsuarioId);
+            var ok = await clientesVisiveis.AnyAsync(c => c.Id == d.ClienteId);
             if (!ok) return false;
         }
         if (d.OportunidadeId.HasValue)
         {
-            var ok = VeTudo
-                ? await Db.Oportunidades.AnyAsync(o => o.Id == d.OportunidadeId)
-                : await Db.Oportunidades.AnyAsync(o => o.Id == d.OportunidadeId && o.ResponsavelId == UsuarioId);
+            var oportunidadesVisiveis = VeTudo ? OportunidadesDaEmpresa : OportunidadesDaEmpresa.Where(o => o.ResponsavelId == UsuarioId);
+            var ok = await oportunidadesVisiveis.AnyAsync(o => o.Id == d.OportunidadeId);
             if (!ok) return false;
         }
         return true;

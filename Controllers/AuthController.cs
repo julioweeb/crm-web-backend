@@ -33,11 +33,16 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthRespostaDto>> Login(LoginDto dto)
     {
         var email = dto.Email.Trim().ToLowerInvariant();
-        var usuario = await _db.Usuarios.FirstOrDefaultAsync(u => u.Email == email);
+        var usuario = await _db.Usuarios.Include(u => u.Empresa)
+            .FirstOrDefaultAsync(u => u.Email == email);
 
         // Mensagem genérica: não revela se o e-mail existe ou se a senha está errada.
         if (usuario is null || !usuario.Ativo || !BCrypt.Net.BCrypt.Verify(dto.Senha, usuario.SenhaHash))
             return Unauthorized(new { erro = "E-mail ou senha inválidos." });
+
+        if (usuario.EmpresaId is null || usuario.Empresa is null || !usuario.Empresa.Ativo)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { erro = "Usuário sem empresa ativa vinculada. Solicite ao administrador que verifique o cadastro." });
 
         return Ok(MontaResposta(usuario));
     }
@@ -47,7 +52,8 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<UsuarioDto>> Eu()
     {
         var id = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-        var u = await _db.Usuarios.FindAsync(id);
+        var empresaId = int.Parse(User.FindFirstValue(TokenService.EmpresaIdClaim)!);
+        var u = await _db.Usuarios.FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == empresaId);
         if (u is null || !u.Ativo) return Unauthorized();
         return new UsuarioDto(u.Id, u.Nome, u.Email, u.Perfil, u.Ativo);
     }

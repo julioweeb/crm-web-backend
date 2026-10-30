@@ -13,7 +13,7 @@ public class LeadsController : BaseCrmController
     public LeadsController(CrmDbContext db) : base(db) { }
 
     private IQueryable<Lead> Visiveis() =>
-        VeTudo ? Db.Leads : Db.Leads.Where(l => l.ResponsavelId == UsuarioId);
+        VeTudo ? LeadsDaEmpresa : LeadsDaEmpresa.Where(l => l.ResponsavelId == UsuarioId);
 
     [HttpGet]
     public async Task<PaginaDto<Lead>> Listar(

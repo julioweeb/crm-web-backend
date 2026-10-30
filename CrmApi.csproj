@@ -18,4 +18,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1development_1json__JsonSchema="https://www.schemastore.org/crmapi.cs" /></VisualStudio></ProjectExtensions>
+
 </Project>
