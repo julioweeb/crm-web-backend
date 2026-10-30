@@ -24,31 +24,8 @@ public class AuthController : ControllerBase
         _tokens = tokens;
     }
 
-    // Cadastro público: sempre cria um Vendedor. Perfis maiores só o Admin concede.
-    [HttpPost("registro")]
-    [AllowAnonymous]
-    [EnableRateLimiting("login")]
-    public async Task<ActionResult<AuthRespostaDto>> Registro(RegistroDto dto)
-    {
-        if (!SenhaForte(dto.Senha))
-            return BadRequest(new { erro = "A senha deve ter 8+ caracteres, com letras e números." });
-
-        var email = dto.Email.Trim().ToLowerInvariant();
-        if (await _db.Usuarios.AnyAsync(u => u.Email == email))
-            return Conflict(new { erro = "E-mail já cadastrado." });
-
-        var usuario = new Usuario
-        {
-            Nome = dto.Nome.Trim(),
-            Email = email,
-            SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha),
-            Perfil = Perfil.Vendedor
-        };
-        _db.Usuarios.Add(usuario);
-        await _db.SaveChangesAsync();
-
-        return Ok(MontaResposta(usuario));
-    }
+    // O cadastro público foi desativado. Novos usuários são criados por UsuariosController,
+    // protegido com [Authorize(Roles = "Admin")].
 
     [HttpPost("login")]
     [AllowAnonymous]

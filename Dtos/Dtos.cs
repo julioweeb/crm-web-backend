@@ -6,11 +6,6 @@ namespace CrmApi.Dtos;
 // DTOs de entrada: só expõem os campos que o cliente da API pode alterar.
 // Isso evita "mass assignment" (ex.: alguém enviar ResponsavelId ou Perfil no JSON).
 
-public record RegistroDto(
-    [Required, MaxLength(120)] string Nome,
-    [Required, EmailAddress, MaxLength(160)] string Email,
-    [Required, MinLength(8), MaxLength(100)] string Senha);
-
 public record LoginDto(
     [Required, EmailAddress] string Email,
     [Required] string Senha);
