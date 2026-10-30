@@ -22,6 +22,19 @@ public class Usuario
     public Perfil Perfil { get; set; } = Perfil.Vendedor;
     public bool Ativo { get; set; } = true;
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+
+    public int? EmpresaId { get; set; }
+    [JsonIgnore] public Empresa? Empresa { get; set; }
+}
+
+public class Empresa
+{
+    public int Id { get; set; }
+    [Required, MaxLength(160)] public string Nome { get; set; } = "";
+    public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
+
+    [JsonIgnore] public List<Usuario> Usuarios { get; set; } = new();
 }
 
 public class Cliente

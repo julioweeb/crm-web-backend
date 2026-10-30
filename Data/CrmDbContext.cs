@@ -8,6 +8,7 @@ public class CrmDbContext : DbContext
     public CrmDbContext(DbContextOptions<CrmDbContext> options) : base(options) { }
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Empresa> Empresas => Set<Empresa>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Contato> Contatos => Set<Contato>();
     public DbSet<Interacao> Interacoes => Set<Interacao>();
@@ -19,6 +20,10 @@ public class CrmDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder mb)
     {
         mb.Entity<Usuario>().HasIndex(u => u.Email).IsUnique();
+
+        mb.Entity<Empresa>().Property(e => e.Nome).IsRequired().HasMaxLength(160);
+        mb.Entity<Usuario>().HasOne(u => u.Empresa).WithMany(e => e.Usuarios)
+            .HasForeignKey(u => u.EmpresaId).OnDelete(DeleteBehavior.Restrict);
 
         mb.Entity<Oportunidade>().Property(o => o.Valor).HasPrecision(18, 2);
 

@@ -23,7 +23,7 @@ dotnet user-secrets set "ConnectionStrings:Padrao" "Host=...;Port=5432;Database=
 dotnet run
 ```
 
-Na primeira execução a API cria as tabelas (`EnsureCreated`) e ativa o RLS. Confira em **Table Editor**.
+Na primeira execução a API cria as tabelas do modelo (`CreateTables`) e ativa o RLS. Em um banco existente, `CreateTables` não altera o esquema; a inicialização aplica somente a adição idempotente de `Empresas` e da coluna opcional `Usuarios.EmpresaId`, com FK e índice. Confira em **Table Editor**.
 
 ## 3. Segurança: Row Level Security (RLS)
 
