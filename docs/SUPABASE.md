@@ -24,7 +24,9 @@ Ao iniciar, a API:
 3. habilita RLS nas tabelas, incluindo `Empresas`;
 4. se ainda não houver usuário e o seed do Admin estiver configurado, cria ou usa a empresa `Seed:EmpresaNome` e associa o Admin a ela.
 
-A inicialização preserva os dados existentes. Ela não atribui automaticamente uma empresa aos usuários antigos sem `EmpresaId`. Antes do login, confirme que cada usuário está vinculado à empresa correta.
+A inicialização preserva os dados existentes. Ela não atribui automaticamente uma empresa aos usuários antigos sem EmpresaId. Antes do login, confirme que cada usuário está vinculado à empresa correta.
+
+Em Development, SuperAdmin:Email assume o e-mail do Admin inicial quando não é configurado. Em produção, configure SuperAdmin__Email para promover uma conta ativa que já esteja vinculada a uma empresa ativa. O papel fica salvo em Usuarios.Perfil; depois da promoção, faça login novamente para receber um token SuperAdmin. O SuperAdmin administra empresas, mas o acesso aos dados de CRM continua limitado à empresa gravada no token.
 
 ### Conferir empresas e usuários
 
@@ -43,7 +45,7 @@ SET "EmpresaId" = 1
 WHERE "Email" = 'usuario@exemplo.com';
 ```
 
-Para criar uma empresa enquanto ainda não há tela no CRM, use o **Table Editor** (`Empresas → Insert row`) ou SQL:
+Use a tela Empresas do CRM com a conta SuperAdmin: ela cria a empresa e o primeiro Admin já associado, sem editar EmpresaId manualmente. Table Editor ou SQL servem apenas para manutenção/bootstrap fora do fluxo normal:
 
 ```sql
 INSERT INTO public."Empresas" ("Nome", "Ativo", "CriadoEm")

@@ -78,3 +78,11 @@ public record AnotacaoDto(
     int? LeadId);
 
 public record PaginaDto<T>(int Total, int Pagina, int Tamanho, List<T> Itens);
+
+public record EmpresaCriarDto(
+    [Required, MaxLength(160)] string Nome,
+    [Required, MaxLength(120)] string AdminNome,
+    [Required, EmailAddress, MaxLength(160)] string AdminEmail,
+    [Required, MaxLength(200)] string AdminSenha);
+
+public record EmpresaDto(int Id, string Nome, bool Ativo, DateTime CriadoEm, int TotalUsuarios);

@@ -7,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CrmApi.Controllers;
 
-// Controle de usuários e permissões: somente Admin.
+// Admin e SuperAdmin gerenciam usuários apenas dentro da empresa do próprio token.
 [Route("api/usuarios")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin,SuperAdmin")]
 public class UsuariosController : BaseCrmController
 {
     public UsuariosController(CrmDbContext db) : base(db) { }
@@ -22,6 +22,9 @@ public class UsuariosController : BaseCrmController
     [HttpPost]
     public async Task<ActionResult<UsuarioDto>> Criar(UsuarioAdminDto dto)
     {
+        if (dto.Perfil == Perfil.SuperAdmin)
+            return Forbid();
+
         if (string.IsNullOrWhiteSpace(dto.Senha) || !AuthController.SenhaForte(dto.Senha))
             return BadRequest(new { erro = "Senha obrigatória: 8+ caracteres, com letras e números." });
 
@@ -49,9 +52,13 @@ public class UsuariosController : BaseCrmController
         var u = await Db.Usuarios.FirstOrDefaultAsync(x => x.Id == id && x.EmpresaId == EmpresaId);
         if (u is null) return NotFound();
 
-        // O admin não pode se rebaixar nem se desativar (evita ficar sem administrador).
-        if (id == UsuarioId && (dto.Perfil != Perfil.Admin || !dto.Ativo))
-            return BadRequest(new { erro = "Você não pode remover seu próprio acesso de administrador." });
+        // O perfil SuperAdmin só é concedido pela configuração de bootstrap.
+        if (dto.Perfil == Perfil.SuperAdmin && !(id == UsuarioId && u.Perfil == Perfil.SuperAdmin))
+            return Forbid();
+
+        // Ninguém pode remover o próprio acesso atual nem desativar a própria conta.
+        if (id == UsuarioId && (dto.Perfil != u.Perfil || !dto.Ativo))
+            return BadRequest(new { erro = "Você não pode alterar seu próprio perfil ou desativar sua conta." });
 
         var email = dto.Email.Trim().ToLowerInvariant();
         if (await Db.Usuarios.AnyAsync(x => x.Email == email && x.Id != id))

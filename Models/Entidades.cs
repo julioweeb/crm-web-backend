@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace CrmApi.Models;
 
 // ===== Enumerações =====
-public enum Perfil { Vendedor = 0, Gerente = 1, Admin = 2 }
+public enum Perfil { Vendedor = 0, Gerente = 1, Admin = 2, SuperAdmin = 3 }
 public enum StatusLead { Novo = 0, Contatado = 1, Qualificado = 2, Desqualificado = 3, Convertido = 4 }
 public enum EstagioFunil { Prospeccao = 0, Qualificacao = 1, Proposta = 2, Negociacao = 3, Ganha = 4, Perdida = 5 }
 public enum TipoInteracao { Ligacao = 0, Email = 1, Reuniao = 2, Mensagem = 3, Outro = 4 }

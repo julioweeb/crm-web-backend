@@ -35,6 +35,10 @@ Pré-requisito: Empresa A e Empresa B ativas, cada uma com um Admin e ao menos u
 | 9 | Converter lead como cada empresa | Cliente/oportunidade criados ficam apenas na empresa do lead |
 | 10 | Consultar dashboard de A e B | Contagens, valores e tarefas não se misturam |
 | 11 | Como A, tentar consultar/editar ID de usuário de B | 404 ou ausência na listagem |
+| 12 | Como Admin comum, chamar GET /api/empresas e abrir a tela Empresas | 403 / rota não disponível |
+| 13 | Como SuperAdmin, criar empresa pela tela Empresas com primeiro Admin | Empresa e Admin são criados; Admin entra já vinculado sem SQL manual |
+| 14 | Como SuperAdmin da Empresa A, tentar consultar ID de CRM da Empresa B | 404; papel global não amplia o escopo dos dados de CRM |
+| 15 | Fazer login com o Admin inicial em Development após a promoção | Perfil retornado é SuperAdmin; entrar novamente para substituir token antigo |
 
 **Já confirmado pelo usuário:** Admins de duas empresas; `GET /api/clientes` da Empresa B não mostrou o cliente da Empresa A. Os demais itens ainda precisam de execução manual.
 

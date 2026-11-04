@@ -12,7 +12,7 @@ Usuários e permissões, empresas, clientes, contatos, histórico de interaçõe
 - **Gerente**: acessa registros da empresa e pode excluir clientes.
 - **Admin**: acessa registros da empresa e gerencia usuários dessa empresa.
 
-O escopo da empresa é obtido do usuário autenticado. Ainda não há tela de cadastro de empresas: o cadastro inicial da empresa é feito no Supabase. Um Admin cria usuários da própria empresa pela API.
+O escopo da empresa é obtido do usuário autenticado. O SuperAdmin cadastra empresas e o primeiro Admin pela tela Empresas; o vínculo é automático. Admins comuns continuam limitados à própria empresa e cadastram os demais usuários por Usuários. O SuperAdmin também só acessa dados de CRM da empresa vinculada ao seu próprio usuário.
 
 ## Como rodar localmente
 
@@ -37,7 +37,7 @@ O Swagger fica em `/swagger` no endereço exibido pelo projeto (localmente, norm
 
 Na primeira execução em banco vazio, `Program.cs` cria as tabelas. A inicialização também aplica SQL idempotente para garantir `Empresas`, `Usuarios.EmpresaId`, índice e chave estrangeira, e habilita RLS nas tabelas, inclusive `Empresas`. Em banco existente, os usuários não são transferidos automaticamente: confira o vínculo `EmpresaId` antes do login.
 
-O primeiro Admin sem usuários é associado à empresa definida por `Seed:EmpresaNome` (em Development há o padrão `Empresa inicial`). Não existe gerenciamento de empresas pela interface nesta etapa.
+O primeiro Admin sem usuários é associado à empresa definida por Seed:EmpresaNome (em Development há o padrão Empresa inicial). Em Development, SuperAdmin:Email assume o e-mail do Admin inicial se não estiver configurado; em produção, defina SuperAdmin__Email para uma conta ativa já vinculada a uma empresa. Essa conta ganha o papel SuperAdmin sem alteração manual no Supabase.
 
 O projeto ainda não usa migrations formais do EF Core. Para futuras mudanças estruturais, planeje migrations com baseline para o banco atual. Veja [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
@@ -59,4 +59,4 @@ Testes manuais funcionais e de isolamento: [`docs/CHECKLIST-TESTES.md`](docs/CHE
 
 - Sem migrations formais e sem testes automatizados de back-end.
 - Sem refresh token; validade padrão do JWT é 8 horas, mas usuário/empresa/perfil desativados ou alterados são recusados na validação.
-- Cadastro e administração de empresas pela interface ainda não foram implementados.
+- A conta SuperAdmin lista/cria empresas; cada empresa nova recebe um Admin inicial. Transferir uma conta existente entre empresas continua sendo uma operação administrativa separada.

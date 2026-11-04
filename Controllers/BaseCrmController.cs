@@ -19,7 +19,7 @@ public abstract class BaseCrmController : ControllerBase
     protected int EmpresaId => int.Parse(User.FindFirstValue(TokenService.EmpresaIdClaim)!);
 
     // Admin e Gerente enxergam todos os registros; Vendedor só os seus.
-    protected bool VeTudo => User.IsInRole("Admin") || User.IsInRole("Gerente");
+    protected bool VeTudo => User.IsInRole("Admin") || User.IsInRole("Gerente") || User.IsInRole("SuperAdmin");
 
     protected IQueryable<Cliente> ClientesDaEmpresa => Db.Clientes
         .Where(c => c.Responsavel != null && c.Responsavel.EmpresaId == EmpresaId);

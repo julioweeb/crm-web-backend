@@ -28,6 +28,8 @@ if (builder.Environment.IsDevelopment())
         builder.Configuration["Seed:AdminSenha"] = "Admin@12345";
     if (string.IsNullOrWhiteSpace(builder.Configuration["Seed:EmpresaNome"]))
         builder.Configuration["Seed:EmpresaNome"] = "Empresa inicial";
+    if (string.IsNullOrWhiteSpace(builder.Configuration["SuperAdmin:Email"]))
+        builder.Configuration["SuperAdmin:Email"] = builder.Configuration["Seed:AdminEmail"];
 }
 
 // ===== Banco de dados (PostgreSQL / Supabase) =====
@@ -221,6 +223,23 @@ using (var scope = app.Services.CreateScope())
             Empresa = empresa
         });
         db.SaveChanges();
+    }
+
+    // A conta configurada como SuperAdmin é promovida sem editar o banco manualmente.
+    var superAdminEmail = app.Configuration["SuperAdmin:Email"]?.Trim().ToLowerInvariant();
+    if (!string.IsNullOrWhiteSpace(superAdminEmail))
+    {
+        var superAdmin = db.Usuarios.Include(u => u.Empresa)
+            .FirstOrDefault(u => u.Email == superAdminEmail);
+        if (superAdmin is null || !superAdmin.Ativo || superAdmin.EmpresaId is null
+            || superAdmin.Empresa is null || !superAdmin.Empresa.Ativo)
+            throw new InvalidOperationException("SuperAdmin:Email deve apontar para um usuário ativo vinculado a uma empresa ativa.");
+
+        if (superAdmin.Perfil != Perfil.SuperAdmin)
+        {
+            superAdmin.Perfil = Perfil.SuperAdmin;
+            db.SaveChanges();
+        }
     }
 }
 
