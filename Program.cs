@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using CrmApi.Data;
@@ -54,6 +55,41 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(chaveJwt)),
             ClockSkew = TimeSpan.FromMinutes(1)
+        };
+        opt.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal;
+                var usuarioClaim = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var empresaClaim = principal?.FindFirst(TokenService.EmpresaIdClaim)?.Value;
+                var perfilClaim = principal?.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (!int.TryParse(usuarioClaim, out var usuarioId)
+                    || !int.TryParse(empresaClaim, out var empresaId))
+                {
+                    context.Fail("Token sem usuário ou empresa válida.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<CrmDbContext>();
+                var perfilAtual = await db.Usuarios
+                    .AsNoTracking()
+                    .Where(u => u.Id == usuarioId
+                        && u.EmpresaId == empresaId
+                        && u.Ativo
+                        && u.Empresa != null
+                        && u.Empresa.Ativo)
+                    .Select(u => (Perfil?)u.Perfil)
+                    .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+
+                if (perfilAtual is null
+                    || !Enum.TryParse<Perfil>(perfilClaim, out var perfilDoToken)
+                    || perfilAtual.Value != perfilDoToken)
+                {
+                    context.Fail("Usuário, empresa ou perfil do token não está mais ativo.");
+                }
+            }
         };
     });
 builder.Services.AddAuthorization();
