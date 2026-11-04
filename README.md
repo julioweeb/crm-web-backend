@@ -1,48 +1,62 @@
 # CRM – API (back-end)
 
-API REST em **ASP.NET Core 8** com **PostgreSQL (Supabase)**, autenticação **JWT** e perfis de acesso.
-O front-end fica em um repositório separado (`crm-frontend`, Angular).
+API REST em **ASP.NET Core 8**, com **EF Core 8**, **PostgreSQL/Supabase** e autenticação **JWT**. O front-end Angular fica em repositório separado (`crm-frontend`).
 
 ## Funcionalidades
-Usuários e permissões · clientes · contatos · histórico de interações · leads (com conversão em cliente) · oportunidades e funil de vendas · tarefas e agendamento · anotações · dashboard · busca, filtros e paginação.
+
+Usuários e permissões, empresas, clientes, contatos, histórico de interações, leads e conversão em cliente, oportunidades e funil, tarefas, anotações, dashboard, busca, filtros e paginação.
 
 ### Perfis de acesso
-- **Vendedor**: vê e edita apenas os registros que ele criou.
-- **Gerente**: vê tudo e pode excluir clientes.
-- **Administrador**: tudo isso + gerenciar usuários.
 
-## Como rodar
-Pré-requisitos: .NET 8 SDK e um projeto no Supabase.
+- **Vendedor**: acessa apenas registros próprios dentro da empresa.
+- **Gerente**: acessa registros da empresa e pode excluir clientes.
+- **Admin**: acessa registros da empresa e gerencia usuários dessa empresa.
 
-1. Abra `appsettings.Development.json` e troque `COLOQUE_SUA_SENHA_AQUI` pela senha do banco no Supabase.
-   (Este arquivo está no `.gitignore`. Ao clonar do GitHub, copie `appsettings.Development.example.json` para `appsettings.Development.json` e edite.)
-2. Rode:
+O escopo da empresa é obtido do usuário autenticado. Ainda não há tela de cadastro de empresas: o cadastro inicial da empresa é feito no Supabase. Um Admin cria usuários da própria empresa pela API.
+
+## Como rodar localmente
+
+Pré-requisitos: .NET 8 SDK e um projeto no Supabase. Configure a connection string com **User Secrets** (na pasta do projeto):
+
+```bash
+dotnet user-secrets set "ConnectionStrings:Padrao" "Host=...;Port=5432;Database=postgres;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true"
+```
+
+Consulte [`docs/SUPABASE.md`](docs/SUPABASE.md) para montar a connection string. Não coloque a senha no repositório nem a envie em mensagens.
+
+No Visual Studio, selecione o perfil **CrmApi** e inicie com **F5**. Ou, no terminal:
 
 ```bash
 dotnet restore
-dotnet run        # http://localhost:5080  (Swagger em /swagger)
+dotnet run
 ```
 
-- As tabelas são criadas automaticamente e o admin inicial é `admin@crm.local` / `Admin@12345` (**troque a senha**).
-- Em Development, a chave JWT e o admin têm valores padrão caso não estejam configurados.
-- Detalhes da connection string, RLS e deploy: [`docs/SUPABASE.md`](docs/SUPABASE.md)
+O Swagger fica em `/swagger` no endereço exibido pelo projeto (localmente, normalmente `http://localhost:5080/swagger`). Em Development, há valores padrão para a chave JWT e para o Admin inicial; troque a senha padrão antes de usar dados reais.
 
-## CORS (integração com o front-end)
-A API só aceita chamadas das origens listadas em `Cors:Origens` (padrão `http://localhost:4200`).
-Ao publicar o front, adicione a URL dele, por exemplo via variável de ambiente `Cors__Origens__0=https://meu-crm.vercel.app`.
+## Banco de dados e multiempresa
+
+Na primeira execução em banco vazio, `Program.cs` cria as tabelas. A inicialização também aplica SQL idempotente para garantir `Empresas`, `Usuarios.EmpresaId`, índice e chave estrangeira, e habilita RLS nas tabelas, inclusive `Empresas`. Em banco existente, os usuários não são transferidos automaticamente: confira o vínculo `EmpresaId` antes do login.
+
+O primeiro Admin sem usuários é associado à empresa definida por `Seed:EmpresaNome` (em Development há o padrão `Empresa inicial`). Não existe gerenciamento de empresas pela interface nesta etapa.
+
+O projeto ainda não usa migrations formais do EF Core. Para futuras mudanças estruturais, planeje migrations com baseline para o banco atual. Veja [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
 ## Segurança
-- Senhas com BCrypt; JWT validado (emissor, audiência, validade, assinatura).
-- Limite de 10 tentativas/minuto por IP em login e cadastro.
-- DTOs de entrada (evita *mass assignment*); responsável do registro vem do token.
-- Filtro de visibilidade por perfil em todas as consultas.
-- RLS ativado nas tabelas do Supabase (bloqueia a API REST pública).
-- Segredos nunca no repositório: user-secrets ou variáveis de ambiente.
 
-## Testes
-Checklist manual (funcionais, segurança, responsividade): [`docs/CHECKLIST-TESTES.md`](docs/CHECKLIST-TESTES.md).
+- Senhas armazenadas com BCrypt; JWT valida assinatura, emissor, audiência e validade.
+- A cada requisição autenticada, a API confere no banco se o usuário está ativo, continua associado à empresa do token, se a empresa está ativa e se o perfil não mudou. Isso adiciona uma consulta ao banco por requisição autenticada.
+- Login limitado a 10 tentativas por minuto por IP.
+- DTOs de entrada evitam alteração de campos de responsável/perfil por *mass assignment*.
+- Consultas e vínculos da API respeitam empresa e perfil. A revisão estática dos endpoints está registrada no checklist; o teste funcional confirmado até agora cobriu a listagem de clientes entre duas empresas.
+- RLS sem policies bloqueia acesso às tabelas pelo endpoint REST público do Supabase. A API conecta como `postgres` e aplica o isolamento por empresa na própria aplicação; RLS não substitui essa regra da API.
+- Mantenha segredos em User Secrets ou variáveis de ambiente.
+
+## Checklist
+
+Testes manuais funcionais e de isolamento: [`docs/CHECKLIST-TESTES.md`](docs/CHECKLIST-TESTES.md).
 
 ## Limitações conhecidas
-- Usa `EnsureCreated()`; para evoluir o banco em produção, adote migrations.
-- Sem *refresh token* (o JWT expira em 8 h).
-- Sem testes automatizados no back-end.
+
+- Sem migrations formais e sem testes automatizados de back-end.
+- Sem refresh token; validade padrão do JWT é 8 horas, mas usuário/empresa/perfil desativados ou alterados são recusados na validação.
+- Cadastro e administração de empresas pela interface ainda não foram implementados.

@@ -1,40 +1,64 @@
-# Checklist de testes manuais
+# Checklist manual do CRM
 
-Use o Swagger (`/swagger`) para a API e o navegador para o front-end. Registre o resultado de cada item (OK / Falhou / Observação).
+Use o Swagger (`/swagger`) e o front-end. Em testes multiempresa, mantenha duas sessões/logins separados: Admin da Empresa A e Admin da Empresa B. Use apenas dados de teste e remova-os depois. Não compartilhe senhas ou tokens.
 
 ## 6.1 Testes funcionais
+
 | # | Teste | Resultado esperado |
 |---|---|---|
-| 1 | Cadastrar usuário com senha fraca (`abc`) | Erro de validação |
-| 2 | Cadastrar usuário válido | Entra no sistema como Vendedor |
-| 3 | Login com senha errada | "E-mail ou senha inválidos." |
-| 4 | Criar, editar e excluir cliente (como Admin) | Lista atualiza |
-| 5 | Adicionar contato e interação ao cliente | Aparecem na aba correspondente |
-| 6 | Criar lead e **converter** em cliente | Lead vira "Convertido"; cliente e oportunidade são criados |
-| 7 | Criar oportunidade e mover no funil (arrastar e seletor) | Coluna e totais mudam |
-| 8 | Mover para **Ganha** | Probabilidade vai a 100% e entra no "Ganho no mês" |
-| 9 | Criar tarefa com data no passado | Aparece como "Atrasada" e no dashboard |
-| 10 | Buscar clientes por nome/e-mail/empresa e filtrar por cidade | Resultados corretos; paginação funciona |
-| 11 | Conferir indicadores do dashboard contra os dados | Números coerentes |
+| 1 | Cadastrar usuário com senha fraca (`abc`) | Rejeitado com mensagem de validação |
+| 2 | Admin cria usuário válido pela API | Usuário fica associado à empresa do Admin |
+| 3 | Login com senha errada | 401, mensagem genérica |
+| 4 | Criar, editar e excluir cliente (como Admin) | Operação permitida e lista atualizada |
+| 5 | Adicionar contato e interação a cliente | Aparecem apenas dentro do cliente selecionado |
+| 6 | Criar lead e converter | Lead vira Convertido; cliente e oportunidade ficam na mesma empresa/responsável |
+| 7 | Criar oportunidade e mover no funil | Estágio e totais atualizados |
+| 8 | Mover oportunidade para Ganha | Probabilidade vira 100% e valor aparece no dashboard do mês |
+| 9 | Criar tarefa vencida | Aparece como atrasada e no dashboard |
+| 10 | Buscar e filtrar clientes/leads/oportunidades | Resultados e paginação corretos |
+| 11 | Comparar dashboard aos registros da empresa | Totais coerentes e sem dados da outra empresa |
 
-## 6.2 Testes de segurança
+## 6.2 Isolamento entre empresas
+
+Pré-requisito: Empresa A e Empresa B ativas, cada uma com um Admin e ao menos um registro de teste. O usuário de B deve ser associado a B antes de fazer login. Execute os mesmos passos trocando A por B.
+
 | # | Teste | Resultado esperado |
 |---|---|---|
-| 1 | Chamar `/api/clientes` sem token | 401 |
-| 2 | Chamar com token expirado/adulterado | 401 e o front volta ao login |
-| 3 | Vendedor A tenta `GET /api/clientes/{id}` de um cliente do Vendedor B | 404 |
-| 4 | Vendedor tenta `DELETE /api/clientes/{id}` | 403 |
-| 5 | Vendedor tenta `GET /api/usuarios` e abrir `/usuarios` no front | 403 / redireciona ao dashboard |
-| 6 | Cadastro público enviando `"perfil":"Admin"` no JSON | Ignorado (continua Vendedor) |
-| 7 | Mais de 10 logins errados em 1 minuto | 429 |
-| 8 | Texto com `<script>` em nome/anotação | Aparece como texto, sem executar |
-| 9 | Inspecionar o banco | Coluna `SenhaHash` com hash BCrypt, nunca a senha |
-| 10 | Admin tenta rebaixar a si mesmo | Bloqueado |
+| 1 | `GET /api/clientes`, `/api/leads`, `/api/oportunidades`, `/api/tarefas` como A e como B | Cada lista contém somente dados daquela empresa |
+| 2 | Pesquisar por nome/e-mail/documento que exista apenas na outra empresa | Nenhum resultado da outra empresa |
+| 3 | `GET` por ID de cliente, lead, oportunidade ou tarefa da outra empresa | 404 |
+| 4 | `GET /api/usuarios` | Mostra apenas usuários da empresa do token |
+| 5 | Abrir contatos/interações pelo ID de um cliente da outra empresa | 404; nenhum dado filho retornado |
+| 6 | Criar oportunidade apontando para cliente da outra empresa | 400, cliente inválido |
+| 7 | Criar/editar tarefa com cliente ou oportunidade da outra empresa | 400, vínculo inválido |
+| 8 | Criar anotação ligada a cliente, lead ou oportunidade da outra empresa | 400, registro inválido |
+| 9 | Converter lead como cada empresa | Cliente/oportunidade criados ficam apenas na empresa do lead |
+| 10 | Consultar dashboard de A e B | Contagens, valores e tarefas não se misturam |
+| 11 | Como A, tentar consultar/editar ID de usuário de B | 404 ou ausência na listagem |
 
-## 6.3 Testes de responsividade
-Use as ferramentas do navegador (F12 → modo dispositivo).
+**Já confirmado pelo usuário:** Admins de duas empresas; `GET /api/clientes` da Empresa B não mostrou o cliente da Empresa A. Os demais itens ainda precisam de execução manual.
+
+## 6.3 Testes de autenticação e autorização
+
+| # | Teste | Resultado esperado |
+|---|---|---|
+| 1 | Chamar endpoint protegido sem token ou com token expirado/adulterado | 401 |
+| 2 | Desativar usuário e reutilizar o token antigo | 401 na próxima requisição autenticada |
+| 3 | Alterar o perfil do usuário e reutilizar token antigo | 401; login novamente gera token com novo perfil |
+| 4 | Alterar `EmpresaId` e reutilizar token antigo | 401; depois do novo login, token contém a nova empresa |
+| 5 | Desativar a empresa e reutilizar token | 401 |
+| 6 | Vendedor tenta excluir cliente | 403 |
+| 7 | Mais de 10 logins incorretos em um minuto | 429 |
+| 8 | Admin tenta remover o próprio perfil Admin/desativar a si mesmo | Bloqueado |
+| 9 | Enviar `ResponsavelId`, `EmpresaId` ou perfil indevido em DTO de negócio | Campos não controlados pelo DTO não alteram o registro |
+| 10 | Inspecionar `SenhaHash` | BCrypt; senha em texto puro nunca é retornada |
+
+## 6.4 Responsividade
+
+Use F12 → modo dispositivo no navegador.
+
 | Dispositivo | Largura | O que verificar |
-|---|---|---|
-| Computador | 1366 px | Menu lateral fixo, tabelas completas |
-| Tablet | 768 px | Menu vira botão ☰; formulários em colunas |
-| Celular | 390 px | Tabelas viram cartões; funil rola horizontalmente; botões clicáveis |
+|---|---:|---|
+| Computador | 1366 px | Menu lateral e tabelas utilizáveis |
+| Tablet | 768 px | Menu compacto e formulários legíveis |
+| Celular | 390 px | Listas/cartões e botões utilizáveis; funil pode rolar horizontalmente |
