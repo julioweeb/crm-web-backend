@@ -58,6 +58,44 @@ public class AuthController : ControllerBase
         return new UsuarioDto(u.Id, u.Nome, u.Email, u.Perfil, u.Ativo);
     }
 
+    [HttpPut("eu")]
+    [Authorize]
+    public async Task<ActionResult<UsuarioDto>> AtualizarMeuPerfil(MeuPerfilAtualizarDto dto)
+    {
+        var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var empresaId = int.Parse(User.FindFirstValue(TokenService.EmpresaIdClaim)!);
+        var usuario = await _db.Usuarios.FirstOrDefaultAsync(u =>
+            u.Id == usuarioId && u.EmpresaId == empresaId && u.Ativo);
+        if (usuario is null) return Unauthorized();
+
+        var nome = dto.Nome.Trim();
+        var email = dto.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(nome) || string.IsNullOrWhiteSpace(email))
+            return BadRequest(new { erro = "Nome e e-mail são obrigatórios." });
+
+        if (await _db.Usuarios.AnyAsync(u => u.Email == email && u.Id != usuarioId))
+            return Conflict(new { erro = "E-mail já cadastrado." });
+
+        var trocarSenha = !string.IsNullOrWhiteSpace(dto.SenhaAtual)
+            || !string.IsNullOrWhiteSpace(dto.NovaSenha);
+        if (trocarSenha)
+        {
+            if (string.IsNullOrWhiteSpace(dto.SenhaAtual) || string.IsNullOrWhiteSpace(dto.NovaSenha))
+                return BadRequest(new { erro = "Informe a senha atual e a nova senha." });
+            if (!BCrypt.Net.BCrypt.Verify(dto.SenhaAtual, usuario.SenhaHash))
+                return BadRequest(new { erro = "A senha atual está incorreta." });
+            if (!SenhaForte(dto.NovaSenha))
+                return BadRequest(new { erro = "A nova senha deve ter 8+ caracteres, com letras e números." });
+
+            usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.NovaSenha);
+        }
+
+        usuario.Nome = nome;
+        usuario.Email = email;
+        await _db.SaveChangesAsync();
+        return new UsuarioDto(usuario.Id, usuario.Nome, usuario.Email, usuario.Perfil, usuario.Ativo);
+    }
+
     private AuthRespostaDto MontaResposta(Usuario u)
     {
         var (token, expira) = _tokens.Gerar(u);

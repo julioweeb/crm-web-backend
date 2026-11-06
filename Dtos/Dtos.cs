@@ -21,6 +21,12 @@ public record UsuarioAdminDto(
     Perfil Perfil,
     bool Ativo);
 
+public record MeuPerfilAtualizarDto(
+    [Required, MaxLength(120)] string Nome,
+    [Required, EmailAddress, MaxLength(160)] string Email,
+    string? SenhaAtual,
+    string? NovaSenha);
+
 public record ClienteDto(
     [Required, MaxLength(160)] string Nome,
     [MaxLength(20)] string? Documento,
