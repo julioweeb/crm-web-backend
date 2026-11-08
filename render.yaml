@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: crm-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__Padrao
+        sync: false
+      - key: Jwt__Key
+        sync: false
+      - key: Cors__Origens__0
+        sync: false
