@@ -27,7 +27,6 @@ public class CrmDbContext : DbContext
 
         mb.Entity<Oportunidade>().Property(o => o.Valor).HasPrecision(18, 2);
 
-        // Evita exclusão em cascata por múltiplos caminhos (limitação do SQL Server).
         mb.Entity<Cliente>().HasOne(c => c.Responsavel).WithMany()
             .HasForeignKey(c => c.ResponsavelId).OnDelete(DeleteBehavior.Restrict);
         mb.Entity<Oportunidade>().HasOne(o => o.Responsavel).WithMany()

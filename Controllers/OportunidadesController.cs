@@ -44,7 +44,6 @@ public class OportunidadesController : BaseCrmController
         return new PaginaDto<OportunidadeItem>(total, pagina, tamanho, itens);
     }
 
-    // Funil de vendas: uma coluna por estágio, com quantidade e valor total.
     public record ColunaFunil(EstagioFunil Estagio, int Quantidade, decimal ValorTotal, List<OportunidadeItem> Itens);
 
     [HttpGet("funil")]
@@ -93,7 +92,6 @@ public class OportunidadesController : BaseCrmController
         return o;
     }
 
-    // Move a oportunidade no funil (usado pelo arrastar-e-soltar do front-end).
     [HttpPatch("{id:int}/estagio")]
     public async Task<ActionResult<Oportunidade>> MudarEstagio(int id, MudarEstagioDto dto)
     {

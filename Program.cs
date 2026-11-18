@@ -15,7 +15,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== Padrões de DESENVOLVIMENTO =====
 // Em Development, se a chave JWT e o admin inicial não estiverem configurados, usamos valores de teste.
 // Em produção isso NÃO acontece: as variáveis são obrigatórias.
 if (builder.Environment.IsDevelopment())
@@ -32,7 +31,6 @@ if (builder.Environment.IsDevelopment())
         builder.Configuration["SuperAdmin:Email"] = builder.Configuration["Seed:AdminEmail"];
 }
 
-// ===== Banco de dados (PostgreSQL / Supabase) =====
 var conexao = builder.Configuration.GetConnectionString("Padrao");
 if (string.IsNullOrWhiteSpace(conexao))
     throw new InvalidOperationException(
@@ -40,7 +38,6 @@ if (string.IsNullOrWhiteSpace(conexao))
 
 builder.Services.AddDbContext<CrmDbContext>(opt => opt.UseNpgsql(conexao));
 
-// ===== Autenticação JWT =====
 var chaveJwt = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(chaveJwt) || chaveJwt.Length < 32)
     throw new InvalidOperationException(
@@ -99,7 +96,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<TokenService>();
 
-// ===== Limite de tentativas no login (proteção contra força bruta) =====
 builder.Services.AddRateLimiter(opt =>
 {
     opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -113,7 +109,6 @@ builder.Services.AddRateLimiter(opt =>
         }));
 });
 
-// ===== CORS: só o front-end configurado pode chamar a API =====
 var origens = builder.Configuration.GetSection("Cors:Origens").Get<string[]>() ?? new[] { "http://localhost:4200" };
 builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
     p.WithOrigins(origens).AllowAnyHeader().AllowAnyMethod()));
@@ -143,11 +138,9 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ===== Cria o banco e o usuário administrador inicial =====
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CrmDbContext>();
-    // Para aprendizado: EnsureCreated. Em produção, troque por migrations (dotnet ef migrations add).
     var jaExiste = db.Database
     .SqlQueryRaw<bool>("SELECT to_regclass('public.\"Usuarios\"') IS NOT NULL AS \"Value\"")
     .AsEnumerable().First();

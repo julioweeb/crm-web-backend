@@ -69,7 +69,6 @@ public class ClientesController : BaseCrmController
         return c;
     }
 
-    // Excluir é restrito a Admin e Gerente.
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Admin,Gerente")]
     public async Task<IActionResult> Excluir(int id)

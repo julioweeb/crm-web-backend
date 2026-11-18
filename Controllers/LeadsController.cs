@@ -50,7 +50,7 @@ public class LeadsController : BaseCrmController
     {
         var l = new Lead { ResponsavelId = UsuarioId };
         Copiar(dto, l);
-        l.Status = StatusLead.Novo; // todo lead entra como "Novo"; a conversão tem endpoint próprio
+        l.Status = StatusLead.Novo;
         Db.Leads.Add(l);
         await Db.SaveChangesAsync();
         return CreatedAtAction(nameof(Obter), new { id = l.Id }, l);
