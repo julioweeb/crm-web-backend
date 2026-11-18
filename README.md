@@ -1,62 +1,67 @@
-# CRM – API (back-end)
+# CRM API
 
-API REST em **ASP.NET Core 8**, com **EF Core 8**, **PostgreSQL/Supabase** e autenticação **JWT**. O front-end Angular fica em repositório separado (`crm-frontend`).
+API REST de um CRM multiempresa, desenvolvida com ASP.NET Core 8, Entity Framework Core e PostgreSQL. O sistema possui interface web em Angular.
+
+- **Demonstração:** [Abrir o CRM](https://crm-web-frontend-eta.vercel.app)
+- **API:** [crm-api-lbhm.onrender.com](https://crm-api-lbhm.onrender.com)
+
+## Conta de demonstração
+
+Use a conta abaixo para explorar a aplicação:
+
+- **Empresa:** Demonstração Enterprise
+- **E-mail:** `demonstracao@demo.com`
+- **Senha:** `User123@`
+- **Perfil:** Admiinistrador
+
+> Use somente dados fictícios e permissões limitadas nessa conta. Não publique uma conta administrativa nem credenciais pessoais.
 
 ## Funcionalidades
 
-Usuários e permissões, empresas, clientes, contatos, histórico de interações, leads e conversão em cliente, oportunidades e funil, tarefas, anotações, dashboard, busca, filtros e paginação.
+- Cadastro e administração de empresas e usuários.
+- Gestão de clientes, contatos, interações e leads.
+- Conversão de leads, oportunidades e funil de vendas.
+- Tarefas, anotações, dashboard, busca e filtros.
+- Controle de acesso por perfil e separação dos dados por empresa.
 
-### Perfis de acesso
+## Tecnologias
 
-- **Vendedor**: acessa apenas registros próprios dentro da empresa.
-- **Gerente**: acessa registros da empresa e pode excluir clientes.
-- **Admin**: acessa registros da empresa e gerencia usuários dessa empresa.
+- C# e ASP.NET Core 8
+- Entity Framework Core
+- PostgreSQL
+- Autenticação JWT e hash de senha com BCrypt
+- Angular no front-end
 
-O escopo da empresa é obtido do usuário autenticado. O SuperAdmin cadastra empresas e o primeiro Admin pela tela Empresas; o vínculo é automático. Admins comuns continuam limitados à própria empresa e cadastram os demais usuários por Usuários. O SuperAdmin também só acessa dados de CRM da empresa vinculada ao seu próprio usuário.
+## Perfis de acesso
 
-## Como rodar localmente
+- **Vendedor:** acessa registros atribuídos a ele dentro da empresa.
+- **Gerente:** acessa os registros da empresa e pode excluir clientes.
+- **Admin:** administra usuários e registros da própria empresa.
+- **SuperAdmin:** administra empresas e seus Administradores iniciais - Dono do CRM.
 
-Pré-requisitos: .NET 8 SDK e um projeto no Supabase. Configure a connection string com **User Secrets** (na pasta do projeto):
+Os dados do CRM são limitados à empresa associada ao usuário autenticado.
 
-```bash
-dotnet user-secrets set "ConnectionStrings:Padrao" "Host=...;Port=5432;Database=postgres;Username=...;Password=...;SSL Mode=Require;Trust Server Certificate=true"
-```
+## Executar localmente
 
-Consulte [`docs/SUPABASE.md`](docs/SUPABASE.md) para montar a connection string. Não coloque a senha no repositório nem a envie em mensagens.
+Pré-requisitos: .NET 8 SDK e acesso a uma instância PostgreSQL.
 
-No Visual Studio, selecione o perfil **CrmApi** e inicie com **F5**. Ou, no terminal:
+1. Clone este repositório e abra a pasta do projeto.
+2. Configure a conexão com o banco usando User Secrets ou variáveis de ambiente. Não coloque credenciais reais em arquivos versionados.
+3. Restaure e execute a API:
 
-```bash
+```powershell
 dotnet restore
 dotnet run
 ```
 
-O Swagger fica em `/swagger` no endereço exibido pelo projeto (localmente, normalmente `http://localhost:5080/swagger`). Em Development, há valores padrão para a chave JWT e para o Admin inicial; troque a senha padrão antes de usar dados reais.
-
-## Banco de dados e multiempresa
-
-Na primeira execução em banco vazio, `Program.cs` cria as tabelas. A inicialização também aplica SQL idempotente para garantir `Empresas`, `Usuarios.EmpresaId`, índice e chave estrangeira, e habilita RLS nas tabelas, inclusive `Empresas`. Em banco existente, os usuários não são transferidos automaticamente: confira o vínculo `EmpresaId` antes do login.
-
-O primeiro Admin sem usuários é associado à empresa definida por Seed:EmpresaNome (em Development há o padrão Empresa inicial). Em Development, SuperAdmin:Email assume o e-mail do Admin inicial se não estiver configurado; em produção, defina SuperAdmin__Email para uma conta ativa já vinculada a uma empresa. Essa conta ganha o papel SuperAdmin sem alteração manual no Supabase.
-
-O projeto ainda não usa migrations formais do EF Core. Para futuras mudanças estruturais, planeje migrations com baseline para o banco atual. Veja [`docs/SUPABASE.md`](docs/SUPABASE.md).
+Também é possível abrir a solução no Visual Studio e iniciar pelo perfil **CrmApi**. Em ambiente local, o Swagger fica disponível em `/swagger` no endereço indicado pelo terminal.
 
 ## Segurança
 
-- Senhas armazenadas com BCrypt; JWT valida assinatura, emissor, audiência e validade.
-- A cada requisição autenticada, a API confere no banco se o usuário está ativo, continua associado à empresa do token, se a empresa está ativa e se o perfil não mudou. Isso adiciona uma consulta ao banco por requisição autenticada.
-- Login limitado a 10 tentativas por minuto por IP.
-- DTOs de entrada evitam alteração de campos de responsável/perfil por *mass assignment*.
-- Consultas e vínculos da API respeitam empresa e perfil. A revisão estática dos endpoints está registrada no checklist; o teste funcional confirmado até agora cobriu a listagem de clientes entre duas empresas.
-- RLS sem policies bloqueia acesso às tabelas pelo endpoint REST público do Supabase. A API conecta como `postgres` e aplica o isolamento por empresa na própria aplicação; RLS não substitui essa regra da API.
-- Mantenha segredos em User Secrets ou variáveis de ambiente.
+- Não compartilhe senhas, chaves de assinatura ou connection strings.
+- Mantenha segredos fora do GitHub e configure-os no serviço de hospedagem.
+- Use dados fictícios e uma conta separada das contas administrativas na demonstração.
 
-## Checklist
+## Estado do projeto
 
-Testes manuais funcionais e de isolamento: [`docs/CHECKLIST-TESTES.md`](docs/CHECKLIST-TESTES.md).
-
-## Limitações conhecidas
-
-- Sem migrations formais e sem testes automatizados de back-end.
-- Sem refresh token; validade padrão do JWT é 8 horas, mas usuário/empresa/perfil desativados ou alterados são recusados na validação.
-- A conta SuperAdmin lista/cria empresas; cada empresa nova recebe um Admin inicial. Transferir uma conta existente entre empresas continua sendo uma operação administrativa separada.
+O sistema está em desenvolvimento. Os testes funcionais realizados pela equipe estão documentados em `docs/CHECKLIST-TESTES.md`. O back-end ainda não possui testes automatizados nem migrations formais do Entity Framework Core.
